@@ -50,6 +50,9 @@ pose_time = 3
 # Display time for assembled picture
 display_time = 10
 
+# Select message for how to trigger a photo capture
+capture_trigger_msg = "Hit the button!"
+
 # Show a slideshow of existing pictures when idle
 idle_slideshow = True
 
@@ -158,8 +161,9 @@ class Photobooth:
 
             # Display default message
             self.display.clear()
-            self.display.show_message("Hit the button!")
-            self.display.apply()
+            if show_capture_trigger_msg:
+                self.display.show_message(capture_trigger_msg)
+                self.display.apply()
 
             # Wait for an event and handle it
             event = self.display.wait_for_event()
@@ -168,7 +172,7 @@ class Photobooth:
     def _run_slideshow(self):
         while True:
             self.camera.set_idle()
-            self.slideshow.display_next("Hit the button!")
+            self.slideshow.display_next(capture_trigger_msg)
             tic = clock()
             while clock() - tic < self.slideshow_display_time:
                 self.check_and_handle_events()
