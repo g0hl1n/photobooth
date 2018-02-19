@@ -25,7 +25,11 @@ display_size = (1024, 600)
 # Maximum size of assembled image
 image_size = (2352, 1568)
 
-# Size of pictures in the assembled image
+# Number of images assembled
+#   currently supported values: 1, 4
+num_pictures = 4
+
+# Size of pictures in the assembled image (only relevant if num_pictures > 0)
 thumb_size = (1176, 784)
 
 # Image basename
@@ -168,6 +172,9 @@ class Photobooth:
 
     def run(self):
         while True:
+            if num_pictures != 1 and num_pictures != 4:
+                print('INVALID num_pictures CONFIGURATION!')
+                exit(1)
             try:
                 # Enable lamp
                 self.gpio.set_output(self.lamp_channel, 1)
@@ -283,37 +290,43 @@ class Photobooth:
         # Create output image with white background
         output_image = Image.new('RGB', self.pic_size, (255, 255, 255))
 
-        # Image 0
-        img = Image.open(input_filenames[0])
-        img.thumbnail(thumb_size)
-        offset = ( thumb_box[0] - inner_border - img.size[0] ,
-                   thumb_box[1] - inner_border - img.size[1] )
-        output_image.paste(img, offset)
+        if num_pictures == 4:
+            # Image 0
+            img = Image.open(input_filenames[0])
+            img.thumbnail(thumb_size)
+            offset = ( thumb_box[0] - inner_border - img.size[0] ,
+                       thumb_box[1] - inner_border - img.size[1] )
+            output_image.paste(img, offset)
 
-        # Image 1
-        img = Image.open(input_filenames[1])
-        img.thumbnail(thumb_size)
-        offset = ( thumb_box[0] + inner_border,
-                   thumb_box[1] - inner_border - img.size[1] )
-        output_image.paste(img, offset)
+            # Image 1
+            img = Image.open(input_filenames[1])
+            img.thumbnail(thumb_size)
+            offset = ( thumb_box[0] + inner_border,
+                       thumb_box[1] - inner_border - img.size[1] )
+            output_image.paste(img, offset)
 
-        # Image 2
-        img = Image.open(input_filenames[2])
-        img.thumbnail(thumb_size)
-        offset = ( thumb_box[0] - inner_border - img.size[0] ,
-                   thumb_box[1] + inner_border )
-        output_image.paste(img, offset)
+            # Image 2
+            img = Image.open(input_filenames[2])
+            img.thumbnail(thumb_size)
+            offset = ( thumb_box[0] - inner_border - img.size[0] ,
+                       thumb_box[1] + inner_border )
+            output_image.paste(img, offset)
 
-        # Image 3
-        img = Image.open(input_filenames[3])
-        img.thumbnail(thumb_size)
-        offset = ( thumb_box[0] + inner_border ,
-                   thumb_box[1] + inner_border )
-        output_image.paste(img, offset)
+            # Image 3
+            img = Image.open(input_filenames[3])
+            img.thumbnail(thumb_size)
+            offset = ( thumb_box[0] + inner_border ,
+                       thumb_box[1] + inner_border )
+            output_image.paste(img, offset)
 
-        # Save assembled image
-        output_filename = self.pictures.get_next()
-        output_image.save(output_filename, "JPEG")
+            # Save assembled image
+            output_filename = self.pictures.get_next()
+            output_image.save(output_filename, "JPEG")
+        else:
+            output_filename = self.pictures.get_next()
+            img = Image.open(input_filenames[0])
+            img.save(output_filename, "JPEG")
+
         return output_filename
 
     def show_counter(self, seconds):
@@ -343,7 +356,7 @@ class Photobooth:
 
         # Show pose message
         self.display.clear()
-        self.display.show_message("POSE!\n\nTaking four pictures...");
+        self.display.show_message("POSE!\n\nTaking " + str (num_pictures) + " pictures...");
         self.display.apply()
         sleep(2)
 
@@ -352,8 +365,8 @@ class Photobooth:
         outsize = (int(size[0]/2), int(size[1]/2))
 
         # Take pictures
-        filenames = [i for i in range(4)]
-        for x in range(4):
+        filenames = [i for i in range(num_pictures)]
+        for x in range(num_pictures):
             # Countdown
             self.show_counter(self.pose_time)
 
@@ -363,13 +376,13 @@ class Photobooth:
                 remaining_attempts = remaining_attempts - 1
 
                 self.display.clear()
-                self.display.show_message("S M I L E !!!\n\n" + str(x+1) + " of 4")
+                self.display.show_message("S M I L E !!!\n\n" + str(x+1) + " of " + str(num_pictures))
                 self.display.apply()
 
                 tic = clock()
 
                 try:
-                    filenames[x] = self.camera.take_picture("/tmp/photobooth_%02d.jpg" % x)
+                    filenames[x] = self.camera.take_picture("/tmp/photobooth_%04d.jpg" % x)
                     remaining_attempts = 0
                 except CameraException as e:
                     # On recoverable errors: display message and retry
