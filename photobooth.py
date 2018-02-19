@@ -73,6 +73,9 @@ idle_slideshow = True
 # Display time of pictures in the slideshow
 slideshow_display_time = 5
 
+# Configure text to display during slideshow
+slideshow_text = "Hit the button!"
+
 # Default to sending every montage to the printer?
 auto_print = True
 
@@ -331,7 +334,7 @@ class Photobooth:
             self.camera.set_idle()
 
             # Display default message
-            self.display.msg("Hit the button!")
+            self.display.msg(slideshow_text)
 
             # Wait for an event and handle it
             event = self.display.wait_for_event()
@@ -340,7 +343,7 @@ class Photobooth:
     def _run_slideshow(self):
         while True:
             self.camera.set_idle()
-            self.slideshow.display_next("Hit the button!")
+            self.slideshow.display_next(slideshow_text)
             tic = time()
             while time() - tic < self.slideshow_display_time:
                 self.check_and_handle_events()
