@@ -53,6 +53,9 @@ display_time = 10
 # Show a slideshow of existing pictures when idle
 idle_slideshow = True
 
+# Directory to get the pictures for the slideshow
+slideshow_dir = picture_basename
+
 # Display time of pictures in the slideshow
 slideshow_display_time = 5
 
@@ -133,7 +136,7 @@ class Photobooth:
         if self.idle_slideshow:
             self.slideshow_display_time = slideshow_display_time
             self.slideshow = Slideshow(display_size, display_time, 
-                                       os.path.dirname(os.path.realpath(picture_basename)))
+                                       os.path.dirname(os.path.realpath(slideshow_dir)))
 
         input_channels    = [ trigger_channel, shutdown_channel ]
         output_channels   = [ lamp_channel ]
