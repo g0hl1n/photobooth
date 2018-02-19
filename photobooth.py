@@ -20,20 +20,20 @@ from events import Rpi_GPIO as GPIO
 #####################
 
 # Screen size
-display_size = (1024, 600)
+display_size = (800, 480)
 
 # Maximum size of assembled image
 image_size = (2352, 1568)
 
 # Number of images assembled
 #   currently supported values: 1, 4
-num_pictures = 4
+num_pictures = 1
 
 # Size of pictures in the assembled image (only relevant if num_pictures > 0)
 thumb_size = (1176, 784)
 
 # Image basename
-picture_basename = datetime.now().strftime("%Y-%m-%d/pic")
+picture_basename = datetime.now().strftime("capture/pic")
 
 # GPIO channel of switch to shutdown the Photobooth
 gpio_shutdown_channel = 24 # pin 18 in all Raspi-Versions
@@ -51,13 +51,13 @@ pose_time = 3
 display_time = 10
 
 # Select message for how to trigger a photo capture
-capture_trigger_msg = "Hit the button!"
+capture_trigger_msg = ""
 
 # Show a slideshow of existing pictures when idle
 idle_slideshow = True
 
 # Directory to get the pictures for the slideshow
-slideshow_dir = picture_basename
+slideshow_dir = "slideshow/pic"
 
 # Display time of pictures in the slideshow
 slideshow_display_time = 5
