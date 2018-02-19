@@ -402,6 +402,9 @@ class Photobooth:
                 if toc < 1.0:
                     sleep(1.0 - toc)
 
+        # Picture was taken, therefore set the camera to idle
+        self.camera.set_idle()
+
         # Show 'Wait'
         self.display.clear()
         self.display.show_message("Please wait!\n\nProcessing...")
