@@ -769,6 +769,9 @@ class Photobooth:
         # Show 'Wait'
         self.display.msg("Please wait!\n\nWorking\n...")
 
+        # Idle camera to save battery
+        self.camera.set_idle()
+
         # Assemble them
         outfile = self.assemble_pictures(filenames)
 
