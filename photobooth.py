@@ -13,8 +13,8 @@ from time import sleep, time
 from PIL import Image
 
 from gui import GuiException, GUI_PyGame as GuiModule
-from camera import CameraException, Camera_cv as CameraModule
-#from camera import CameraException, Camera_gPhoto as CameraModule
+#from camera import CameraException, Camera_cv as CameraModule
+from camera import CameraException, Camera_gPhoto as CameraModule
 from slideshow import Slideshow
 from events import Rpi_GPIO as GPIO
 
@@ -38,16 +38,18 @@ display_size = (0, 0)
 
 # Is the monitor on its side? (For portrait photos on landscape monitors).
 # If True, text will be rotated 90 degrees counterclockwise
-display_rotate = True
+display_rotate = False
 
 # Is the camera on its side? (For portrait orientation. Note: EXIF is ignored!)
 # If True, the "right" side of the photo will be assumed to be the actual top.
-camera_rotate = True
+camera_rotate = False
 
 # Final size of assembled image (the montage of four thumbnails).
 # If printing, this should be same aspect ratio as the printer page.
 # (E.g., 6x4 photo paper @392dpi == 2352x1568)
-assembled_size = (6*392, 4*392)
+assembled_size = (1020, 630)
+
+picture_per_photo = 1
 
 # Image basename
 picture_basename = datetime.now().strftime("%Y-%m-%d/pic")
@@ -62,10 +64,10 @@ gpio_trigger_channel = 23 # pin 16 in all Raspi-Versions, (try pin 14 as GND).
 gpio_lamp_channel = 4 # pin 7 in all Raspi-Versions, (pin 9 is a handy GND)
 
 # Waiting time in seconds for posing
-pose_time = 3
+pose_time = 5
 
 # Display time for assembled picture
-display_time = 10
+display_time = 5
 
 # Show a slideshow of existing pictures when idle
 idle_slideshow = True
@@ -74,13 +76,13 @@ idle_slideshow = True
 slideshow_display_time = 5
 
 # Default to sending every montage to the printer?
-auto_print = True
+auto_print = False
 
 # What filename for the shutter sound when taking pictures?
 # Set to None to have no sound.
-shutter_sound = "shutter.wav"
-bip1_sound    = "bip1.wav"
-bip2_sound    = "bip2.wav"
+shutter_sound = "None"
+bip1_sound    = "None"
+bip2_sound    = "None"
 
 
 # Temp directory for storing pictures
@@ -290,8 +292,7 @@ class Photobooth:
         self.idle_slideshow = idle_slideshow
         if self.idle_slideshow:
             self.slideshow_display_time = slideshow_display_time
-            self.slideshow = Slideshow(display_size, display_time, 
-                                       os.path.dirname(os.path.realpath(picture_basename)))
+            self.slideshow = Slideshow(display_size, display_time, "slideshow/")
             if (display_rotate):
                 self.slideshow.display.set_rotate(True)
 
@@ -331,19 +332,18 @@ class Photobooth:
             self.camera.set_idle()
 
             # Display default message
-            self.display.msg("Hit the button!")
+            self.display.msg("START")
 
             # Wait for an event and handle it
             event = self.display.wait_for_event()
             self.handle_event(event)
 
     def _run_slideshow(self):
-        while True:
-            self.camera.set_idle()
-            self.slideshow.display_next("Hit the button!")
-            tic = time()
-            while time() - tic < self.slideshow_display_time:
-                self.check_and_handle_events()
+        self.camera.set_idle()
+        self.slideshow.display_next()
+        # Wait for an event and handle it
+        event = self.display.wait_for_event()
+        self.handle_event(event)
 
     def run(self):
         while True:
@@ -447,6 +447,7 @@ class Photobooth:
         """Implements the actions for the different mousebutton events"""
         # Take a picture
         if key == 1:
+            self.display.msg("Achtung...")
             self.take_picture()
 
     def handle_gpio_event(self, channel):
@@ -516,44 +517,13 @@ class Photobooth:
         else:
             (W, H) = self.pic_size
 
-        # Thumbnail size of pictures
-        outer_border = int( 2 * max(W,H) / 100 ) # 2% of long edge
-        inner_border = int( 1 * max(W,H) / 100 ) # 1% of long edge
-        thumb_box = ( int( W / 2 ) ,
-                      int( H / 2 ) )
-        thumb_size = ( thumb_box[0] - outer_border - inner_border ,
-                       thumb_box[1] - outer_border - inner_border )
-
         # Create output image with white background
         output_image = Image.new('RGB', (W, H), (255, 255, 255))
 
         # Image 0
         img = Image.open(input_filenames[0])
-        img = img.resize(maxpect(img.size, thumb_size), Image.ANTIALIAS)
-        offset = ( thumb_box[0] - inner_border - img.size[0] ,
-                   thumb_box[1] - inner_border - img.size[1] )
-        output_image.paste(img, offset)
-
-        # Image 1
-        img = Image.open(input_filenames[1])
-        img = img.resize(maxpect(img.size, thumb_size), Image.ANTIALIAS)
-        offset = ( thumb_box[0] + inner_border,
-                   thumb_box[1] - inner_border - img.size[1] )
-        output_image.paste(img, offset)
-
-        # Image 2
-        img = Image.open(input_filenames[2])
-        img = img.resize(maxpect(img.size, thumb_size), Image.ANTIALIAS)
-        offset = ( thumb_box[0] - inner_border - img.size[0] ,
-                   thumb_box[1] + inner_border )
-        output_image.paste(img, offset)
-
-        # Image 3
-        img = Image.open(input_filenames[3])
-        img = img.resize(maxpect(img.size, thumb_size), Image.ANTIALIAS)
-        offset = ( thumb_box[0] + inner_border ,
-                   thumb_box[1] + inner_border )
-        output_image.paste(img, offset)
+        img = img.resize(maxpect(img.size, self.pic_size), Image.ANTIALIAS)
+        output_image.paste(img, (37, 0))
 
         # Save assembled image
         output_filename = self.pictures.get_next()
@@ -719,15 +689,15 @@ class Photobooth:
         self.gpio.set_output(self.lamp_channel, 0)
 
         # Show pose message
-        self.show_pose(2, "POSE!\n\nTaking 4 pictures ...");
+        self.show_pose(2, "... Fertig ...");
 
         # Extract display and image sizes
         size = self.display.get_size()
         outsize = (int(size[0]/2), int(size[1]/2))
 
         # Take pictures
-        filenames = [i for i in range(4)]
-        for x in range(4):
+        filenames = [i for i in range(picture_per_photo)]
+        for x in range(picture_per_photo):
             # Countdown
             self.show_counter(self.pose_time)
 
@@ -737,7 +707,7 @@ class Photobooth:
                 remaining_attempts = remaining_attempts - 1
 
                 self.display.clear((255,230,200))
-                self.display.show_message("S M I L E !!!\n\n" + str(x+1) + " of 4")
+                self.display.show_message("CHEESE :-)")
                 self.display.apply()
 
                 tic = time()
@@ -764,7 +734,10 @@ class Photobooth:
                     sleep(1.0 - toc)
 
         # Show 'Wait'
-        self.display.msg("Please wait!\n\nWorking\n...")
+        self.display.msg("Geduld bitte!\n\nDas Foto wird verarbeitet")
+
+        # Set camera idle before assembling image
+        self.camera.set_idle()
 
         # Assemble them
         outfile = self.assemble_pictures(filenames)
@@ -785,7 +758,7 @@ class Photobooth:
                 if t != old_t:
                     self.display.clear()
                     self.display.show_picture(outfile, size, (0,0))
-                    self.display.show_message("%s%d" % ("Printing in " if auto_print else "Print photo?\n", t))
+                    self.display.show_message("%s%d" % ("Printing in " if auto_print else "Foto drucken?\n", t))
                     self.display.apply()
                     old_t=t
                 

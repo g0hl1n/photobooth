@@ -320,7 +320,7 @@ class Camera_gPhoto:
                 raise CameraException("get_preview failed.")
             cffi_preview = StringIO.StringIO(cffi_preview)
             f=Image.open(cffi_preview)
-            if self.rotate:     # Is camera on its side?
+            if not self.rotate:     # Is camera on its side?
                 f=f.transpose(Image.ROTATE_90)
             f=numpy.array(f)
         elif piggyphoto_enabled:

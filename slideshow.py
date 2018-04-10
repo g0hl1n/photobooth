@@ -14,7 +14,7 @@ from time import sleep
 #####################
 
 # Screen size
-display_size = (1024, 768)
+display_size = (800, 480)
 
 # Directory for slideshow pictures
 slideshow_directory = "slideshow/"

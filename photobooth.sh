@@ -77,13 +77,13 @@ fi
 if gphoto2 --reset >/dev/null 2>&1; then
     gphoto2 --set-config capturetarget=card 
     gphoto2 --set-config capture=1
-    gphoto2 --set-config imagesize=2
-    gphoto2 --set-config flashmode=3
-    gphoto2 --set-config aperture=0
-    gphoto2 --set-config shutterspeed=0
+#    gphoto2 --set-config imagesize=2
+#    gphoto2 --set-config flashmode=3
+#    gphoto2 --set-config aperture=0
+#    gphoto2 --set-config shutterspeed=0
 fi
 
 # This may need 'sudo' to access camera devices, but probably doesn't.
 # [Note that the Gphoto2 FAQ explicitly says to NEVER run gphoto2 as
 # root, which is essentially what you'd be doing by using sudo here.]
-python photobooth.py >>photobooth.log 2>>photobooth.err
+sudo python photobooth.py >>photobooth.log 2>>photobooth.err
